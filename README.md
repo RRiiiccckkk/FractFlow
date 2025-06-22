@@ -381,7 +381,7 @@ This is a typical representative of fractal intelligence, coordinating multiple 
 python tools/composite/visual_article_agent.py --query "Write an article about AI development with illustrations"
 
 # Customized articles
-python tools/composite/visual_article_agent.py --query "设定：一个视觉识别AI统治社会的世界，人类只能依赖它解释图像。主人公却拥有“人类视觉直觉”，并因此被怀疑为异常个体。
+python tools/composite/visual_article_agent.py --query "设定：一个视觉识别AI统治社会的世界，人类只能依赖它解释图像。主人公却拥有"人类视觉直觉"，并因此被怀疑为异常个体。
 要求：以第一人称，写一段剧情片段，展现他与AI模型对图像理解的冲突。
 情绪基调：冷峻、怀疑、诗性。"
 ```
@@ -591,3 +591,204 @@ tools/
 #### Naming Conventions
 - File names: `snake_case`
 - Class names: `PascalCase`
+
+## 🎙️ 新功能：千问Omni实时语音交互
+
+FractFlow现在支持基于千问Omni的实时语音交互功能，包括：
+
+- ⚡ **实时语音打断** - 在AI说话时可以随时打断
+- 🎤 **智能语音活动检测** (VAD) - 降低阈值提高敏感度  
+- 🔊 **双向音频流** - 支持同时录音和播放
+- 🧵 **多线程处理** - 独立的录音、处理、播放线程
+- 🔄 **WebSocket实时通信** - 与千问Omni API建立持久连接
+- 📝 **语音转录显示** - 实时显示对话内容
+
+## 🚀 快速开始
+
+### 安装依赖
+
+```bash
+# 使用uv安装（推荐）
+uv install
+
+# 或使用pip
+pip install -r requirements.txt
+
+# 安装音频依赖
+uv add pyaudio numpy
+```
+
+### 配置API密钥
+
+1. 复制配置模板：
+```bash
+cp config.env.example .env
+```
+
+2. 编辑 `.env` 文件，填入您的API密钥：
+```bash
+QWEN_API_KEY=your_qwen_api_key_here
+DASHSCOPE_API_KEY=your_dashscope_api_key_here
+```
+
+### 语音交互使用
+
+#### 完美版语音聊天（推荐）
+```bash
+python perfect_voice_chat.py
+```
+
+#### 其他语音功能
+```bash
+# 基础语音聊天
+python qwen_voice_chat.py
+
+# 完整功能启动器
+python start_qwen_voice_complete.py
+
+# 语音打断测试
+python test_voice_interrupt.py
+
+# 音频诊断工具
+python audio_diagnostic.py
+
+# macOS权限修复
+python macos_voice_permission_fix.py
+```
+
+## 🎤 语音系统特性
+
+### 智能设备选择
+- 自动识别和选择最佳麦克风设备
+- 优先使用MacBook内置麦克风
+- 避免兼容性问题设备（如某些蓝牙耳机）
+
+### 优化的VAD参数
+- threshold: 0.15 (平衡敏感度)
+- prefix_padding_ms: 150 (适中的前缀)
+- silence_duration_ms: 400 (适中的静音时间)
+
+### 实时打断机制
+- 检测到用户说话立即停止AI播放
+- 清空音频播放缓冲区
+- 发送取消信号给服务器
+
+## 🛠️ 故障排除
+
+### macOS麦克风权限
+如果遇到语音检测问题：
+1. 运行权限修复工具：`python macos_voice_permission_fix.py`
+2. 在系统偏好设置 > 安全性与隐私 > 隐私 > 麦克风中添加终端应用
+3. 重启终端应用程序
+
+### 音频设备问题
+```bash
+# 运行音频诊断
+python audio_diagnostic.py
+
+# 深度调试
+python deep_voice_debug.py
+```
+
+### 常见问题
+- **无法检测语音**: 检查麦克风权限，尝试更大声说话
+- **连接失败**: 检查API密钥和网络连接
+- **音频质量差**: 尝试使用内置麦克风而非蓝牙设备
+
+## 📊 项目结构
+
+```
+FractFlow/
+├── FractFlow/                      # 核心框架
+│   ├── agent.py                   # 主要Agent类
+│   ├── core/                      # 核心组件
+│   ├── models/                    # AI模型集成
+│   └── ui/                        # 用户界面
+├── tools/                         # 工具集合
+│   ├── core/                      # 核心工具
+│   │   ├── qwen_realtime_voice/   # 语音交互工具
+│   │   ├── comfyui/              # ComfyUI集成
+│   │   ├── file_io/              # 文件操作
+│   │   └── ...                   # 其他工具
+│   └── custom/                    # 自定义工具
+├── perfect_voice_chat.py          # 完美版语音聊天
+├── audio_diagnostic.py            # 音频诊断工具
+└── config.env.example            # 配置模板
+```
+
+## 🎯 语音交互工作流程
+
+1. **连接建立** - 与千问Omni API建立WebSocket连接
+2. **音频初始化** - 设置录音和播放设备
+3. **实时录音** - 持续录制用户语音输入
+4. **语音检测** - 服务器端VAD检测语音活动
+5. **语音识别** - 将语音转换为文本
+6. **AI处理** - 生成回复内容
+7. **语音合成** - 将回复转换为语音
+8. **音频播放** - 播放AI语音回复
+9. **打断处理** - 支持用户随时打断AI说话
+
+## 🔧 技术架构
+
+- **WebSocket通信**: 实时双向数据传输
+- **多线程处理**: 录音、处理、播放独立线程
+- **音频流处理**: PyAudio + 16kHz PCM格式
+- **智能VAD**: 服务器端语音活动检测
+- **缓冲管理**: 音频数据队列和缓冲区管理
+
+## 📝 开发指南
+
+### 添加新的语音功能
+```python
+from tools.core.qwen_realtime_voice.qwen_realtime_voice_mcp import QwenRealtimeVoiceClient
+
+class CustomVoiceClient(QwenRealtimeVoiceClient):
+    def __init__(self):
+        super().__init__()
+        # 自定义初始化
+    
+    async def _handle_responses(self):
+        # 自定义响应处理
+        await super()._handle_responses()
+```
+
+### 自定义VAD参数
+```python
+config = {
+    "turn_detection": {
+        "type": "server_vad",
+        "threshold": 0.2,        # 调整敏感度
+        "prefix_padding_ms": 200, # 调整前缀时间
+        "silence_duration_ms": 500 # 调整静音判断
+    }
+}
+```
+
+## 🤝 贡献指南
+
+1. Fork 项目
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 打开 Pull Request
+
+## 📄 许可证
+
+本项目基于 MIT 许可证开源。详见 [LICENSE](LICENSE) 文件。
+
+## 🙏 致谢
+
+- [千问Omni](https://dashscope.aliyuncs.com/) - 提供实时语音交互API
+- [PyAudio](https://pypi.org/project/PyAudio/) - 音频处理库
+- [WebSockets](https://pypi.org/project/websockets/) - WebSocket通信
+
+## 📞 联系我们
+
+如果您有任何问题或建议，请通过以下方式联系：
+
+- 创建 [Issue](https://github.com/yourusername/FractFlow/issues)
+- 发送邮件到: your-email@example.com
+
+---
+
+⭐ 如果这个项目对您有帮助，请给我们一个星标！

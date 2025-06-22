@@ -1,4 +1,14 @@
-# Python
+# 敏感配置文件
+third_party_config.env
+*.env
+.env*
+
+# API密钥和配置
+config.json
+secrets.json
+api_keys.txt
+
+# Python相关
 __pycache__/
 *.py[cod]
 *$py.class
@@ -21,20 +31,53 @@ wheels/
 *.egg
 MANIFEST
 
-# Pytest
-.pytest_cache/
-pytest_report.xml
-.coverage
-htmlcov/
+# PyAudio临时文件
+*.wav
+*.mp3
+*.m4a
+audio_test_*
 
-# Virtual Environment
+# 虚拟环境
 venv/
 env/
 ENV/
 env.bak/
 venv.bak/
-.env
-.venv
+
+# IDE配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+logs/
+
+# 测试临时文件
+test_output/
+temp/
+tmp/
+
+# 个人笔记和草稿
+notes.md
+draft.md
+personal_*
+
+# 备份文件
+*.bak
+*.backup
+
+# Pytest
+.pytest_cache/
+pytest_report.xml
+.coverage
+htmlcov/
 
 # IDE
 .idea/

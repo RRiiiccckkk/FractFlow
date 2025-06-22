@@ -45,6 +45,13 @@ dependencies = [
     "websocket-client>=1.8.0",
     "pillow>=11.2.1",
     "moviepy>=2.2.1",
+    "aiohttp>=3.12.13",
+    "pyyaml>=6.0.2",
+    "loguru>=0.7.3",
+    "json-repair>=0.47.1",
+    "tokencost>=0.1.23",
+    "pyaudio>=0.2.14",
+    "numpy>=2.2.6",
 ]
 
 [tool.setuptools.packages.find]

@@ -2,7 +2,7 @@
 """
 香港科技大学广州智能语音助手 - 极简版
 HKUST-GZ Intelligent Voice Assistant - Simple Edition
-只包含核心功能：实时语音交互 + 基本打断
+只包含核心功能：实时语音交互 + 基本打断 + 网络搜索
 """
 
 import asyncio
@@ -14,6 +14,7 @@ import queue
 import time
 import numpy as np
 import base64
+import re
 
 # 添加项目路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -27,11 +28,21 @@ except ImportError:
     HAS_PYAUDIO = False
     print("⚠️  PyAudio未安装，将无法播放音频")
 
+# 添加websearch模块导入
+sys.path.insert(0, os.path.join(parent_dir, 'tools', 'core', 'websearch', 'src'))
+try:
+    from core_logic import web_search_and_browse
+    HAS_WEBSEARCH = True
+    print("✅ 网络搜索功能已加载")
+except ImportError as e:
+    HAS_WEBSEARCH = False
+    print(f"⚠️  网络搜索功能未加载: {e}")
+
 from tools.core.qwen_realtime_voice.qwen_realtime_voice_mcp import QwenRealtimeVoiceClient
 from voice_config import setup_api_keys, get_voice_session_config
 
 class SimpleVoiceAssistant(QwenRealtimeVoiceClient):
-    """极简版语音助手 - 专注核心功能"""
+    """极简版语音助手 - 专注核心功能 + 网络搜索"""
     
     def __init__(self, api_key=None):
         super().__init__(api_key)
@@ -48,17 +59,150 @@ class SimpleVoiceAssistant(QwenRealtimeVoiceClient):
         self.current_ai_response = ""
         self.last_user_input_shown = False
         
-        print("🎤 极简版语音助手初始化完成")
+        # 网络搜索相关
+        self.last_user_question = ""  # 记录最后用户问题
+        self.search_in_progress = False  # 搜索进行中标志
+        
+        # 搜索触发词
+        self.search_triggers = [
+            "我做不到", "我不知道", "我无法", "抱歉，我不能", 
+            "我没有相关信息", "我无法提供", "我不确定", "我没有这方面的信息",
+            "我需要搜索", "让我搜索一下", "我去查一查", "我需要查找"
+        ]
+        
+        print("🎤 极简版语音助手初始化完成（含网络搜索）")
     
     async def _configure_session(self):
         """配置会话"""
         config = get_voice_session_config()
         config["instructions"] = (
-            "你是香港科技大学广州的智能语音助手。请用自然、连贯的语气回答用户问题。"
-            "回答要简洁明了，语调亲和友好。"
+            "你是香港科技大学广州的智能语音助手，具备网络搜索能力。"
+            "请用自然、连贯的语气回答用户问题。回答要简洁明了，语调亲和友好。"
+            "\n重要功能说明："
+            "1. 当遇到你无法直接回答的问题（如最新信息、实时数据、专业知识等）时，"
+            "请明确告诉用户：'让我为您搜索最新信息'，然后说'我需要搜索'。"
+            "2. 当你说出'我需要搜索'时，系统会自动启动网络搜索功能。"
+            "3. 搜索完成后，你会收到搜索结果，请基于这些信息重新回答用户问题。"
+            "\n示例回答模式："
+            "- 对于实时信息：'让我为您搜索最新信息。我需要搜索。'"
+            "- 对于专业问题：'这个问题比较专业，让我搜索详细资料。我需要搜索。'"
+            "- 对于不确定信息：'我不太确定这个信息，让我搜索确认一下。我需要搜索。'"
         )
         await self.websocket.send(json.dumps({"type": "session.update", "session": config}))
+        
+    def detect_search_trigger(self, text):
+        """检测是否需要触发搜索"""
+        if not HAS_WEBSEARCH or not text:
+            return False
+            
+        text_lower = text.lower()
+        for trigger in self.search_triggers:
+            if trigger in text_lower:
+                return True
+        return False
     
+    async def perform_web_search(self, question):
+        """执行网络搜索"""
+        if not HAS_WEBSEARCH or not question.strip():
+            return "搜索功能不可用或问题为空"
+            
+        try:
+            print(f"\n🔍 正在搜索: {question}")
+            
+            # 使用网络搜索功能
+            search_result = await web_search_and_browse(
+                query=question,
+                search_engine="duckduckgo", 
+                num_results=3,
+                max_browse=1,  # 浏览第一个结果
+                max_length=3000  # 限制内容长度
+            )
+            
+            print(f"✅ 搜索完成，结果长度: {len(search_result)}字符")
+            return search_result
+            
+        except Exception as e:
+            print(f"❌ 搜索失败: {e}")
+            return f"搜索过程中出现错误: {str(e)}"
+    
+    def synthesize_search_response(self, search_result):
+        """合成搜索结果回答"""
+        if not search_result or "搜索过程中出现错误" in search_result:
+            return "抱歉，搜索时遇到了问题，请稍后再试。"
+        
+        # 简化搜索结果，提取关键信息
+        lines = search_result.split('\n')
+        useful_lines = []
+        
+        for line in lines:
+            line = line.strip()
+            if line and not line.startswith('🔍') and not line.startswith('📌') and not line.startswith('🔗'):
+                useful_lines.append(line)
+                if len(useful_lines) >= 8:  # 限制行数
+                    break
+        
+        summary = ' '.join(useful_lines[:5])  # 取前5行作为摘要
+        if len(summary) > 800:  # 限制长度
+            summary = summary[:800] + "..."
+            
+        return f"根据搜索结果，{summary}"
+    
+    async def _handle_search_trigger(self):
+        """处理搜索触发"""
+        try:
+            if not self.last_user_question.strip():
+                print("⚠️ 没有记录到用户问题，无法执行搜索")
+                self.search_in_progress = False
+                return
+            
+            print(f"\n🔍 AI触发搜索功能")
+            
+            # 执行搜索
+            search_result = await self.perform_web_search(self.last_user_question)
+            
+            if search_result and "搜索过程中出现错误" not in search_result:
+                # 合成搜索结果回答
+                enhanced_response = self.synthesize_search_response(search_result)
+                
+                # 通过websocket发送新的回答
+                await self._send_search_response(enhanced_response)
+            else:
+                print("❌ 搜索失败，无法提供增强回答")
+                
+        except Exception as e:
+            print(f"❌ 搜索处理错误: {e}")
+        finally:
+            self.search_in_progress = False
+    
+    async def _send_search_response(self, response_text):
+        """发送搜索结果回答"""
+        try:
+            print(f"\n🔍 基于搜索结果的回答:")
+            print(f"💬 AI: {response_text}")
+            
+            # 发送会话项目以包含搜索结果
+            message = {
+                "type": "conversation.item.create",
+                "item": {
+                    "type": "message",
+                    "role": "assistant",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": response_text
+                        }
+                    ]
+                }
+            }
+            await self.websocket.send(json.dumps(message))
+            
+            # 请求响应
+            response_request = {"type": "response.create"}
+            await self.websocket.send(json.dumps(response_request))
+            
+        except Exception as e:
+            print(f"❌ 发送搜索回答失败: {e}")
+
     def _recording_worker(self):
         """录音工作线程 - 极简版"""
         print("🎤 录音线程启动")
@@ -188,6 +332,12 @@ class SimpleVoiceAssistant(QwenRealtimeVoiceClient):
                 # AI文本回答完成，显示完整内容
                 if not self.interrupt_detected and self.current_ai_response.strip():
                     print(f"💬 AI: {self.current_ai_response.strip()}")
+                    
+                    # 检测是否需要触发搜索
+                    if self.detect_search_trigger(self.current_ai_response) and not self.search_in_progress:
+                        self.search_in_progress = True
+                        asyncio.create_task(self._handle_search_trigger())
+                    
                     self.current_ai_response = ""
             
             elif response_type == "response.done":
@@ -212,6 +362,7 @@ class SimpleVoiceAssistant(QwenRealtimeVoiceClient):
                 if transcript.strip():
                     self.user_speaking = False
                     self.last_user_input_shown = True
+                    self.last_user_question = transcript  # 记录用户问题用于搜索
                     print(f"👤 您说: {transcript}")
             
             elif response_type == "error":

@@ -52,7 +52,7 @@ class WebSearchTool(ToolTemplate):
 """
     
     TOOLS = [
-        ("src/server.py", "web_search")
+        ("tools/core/websearch/src/server.py", "web_search")
     ]
     
     MCP_SERVER_NAME = "web_search_tool"

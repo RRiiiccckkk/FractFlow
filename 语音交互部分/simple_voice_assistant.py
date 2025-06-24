@@ -39,7 +39,7 @@ except ImportError as e:
     print(f"⚠️  网络搜索功能未加载: {e}")
 
 from tools.core.qwen_realtime_voice.qwen_realtime_voice_mcp import QwenRealtimeVoiceClient
-from voice_config import setup_api_keys, get_voice_session_config
+from 语音交互部分.voice_config import setup_api_keys, get_voice_session_config
 
 class SimpleVoiceAssistant(QwenRealtimeVoiceClient):
     """极简版语音助手 - 专注核心功能 + 网络搜索"""

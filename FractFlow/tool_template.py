@@ -243,9 +243,11 @@ class ToolTemplate:
         
         # Characteristic files that indicate project root
         root_indicators = [
-            'pyproject.toml',  # 最可靠的项目根标识
-            '.git',            # 版本控制根目录
-            'setup.py'         # Python包根目录
+            'pyproject.toml',
+            'README.md', 
+            '.git',
+            'requirements.txt',
+            'setup.py'
         ]
         
         # Search upwards from current directory
@@ -353,6 +355,39 @@ class ToolTemplate:
                 print(f"Agent: {result}")
         finally:
             await agent.shutdown()
+            print("\nAgent session ended.")         
+
+    @classmethod
+    async def _run_audio_interactive(cls):
+        """
+        Audio interactive mode: 语音输入→agent→语音输出 (支持打断)
+        Interactive chat mode with multi-turn conversation support
+        """
+        print(f"\n{cls.__name__} Interactive Mode")
+        print("Say 'exit', 'quit', or 'bye' to end the conversation.\n")
+        from FractFlow.audio_input import AudioInput
+        from FractFlow.tts_output import TTSOutput
+
+        audio_input = AudioInput()
+        tts_output = TTSOutput()
+        agent = await cls.create_agent('agent')
+
+        try:
+            while True:
+                print("请说话...")
+                user_input = audio_input.asr_once()
+                print(f"你说: {user_input}")
+                if user_input.strip().lower() in ('exit', 'quit', 'bye', '退出'):
+                    break
+                print("\nProcessing...\n")
+                result = await agent.process_query(user_input)
+                print(f"Agent: {result}")
+                # TTS播放时支持打断
+                await tts_output.speak(result, interrupt_checker=audio_input.is_interrupting)
+        finally:
+            await agent.shutdown()
+            audio_input.close()
+            tts_output.close()
             print("\nAgent session ended.")
     
     @classmethod
@@ -396,6 +431,7 @@ class ToolTemplate:
         
         # Parse command line arguments
         parser = argparse.ArgumentParser(description=f'{cls.__name__} - Unified Interface')
+        parser.add_argument('--audio-interactive', '-a', action='store_true', help='Run in audio interactive mode')
         parser.add_argument('--interactive', '-i', action='store_true', help='Run in interactive mode')
         parser.add_argument('--query', '-q', type=str, help='Single query mode: process this query and exit')
         parser.add_argument('--log-level', '-l', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], default='INFO', help='Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL')
@@ -408,6 +444,10 @@ class ToolTemplate:
             # Interactive mode
             print(f"Starting {cls.__name__} in interactive mode.")
             asyncio.run(cls._run_interactive())
+        elif args.audio_interactive:
+            # Audio interactive mode
+            print(f"Starting {cls.__name__} in audio interactive mode.")
+            asyncio.run(cls._run_audio_interactive())
         elif args.query:
             # Single query mode
             print(f"Starting {cls.__name__} in single query mode.")

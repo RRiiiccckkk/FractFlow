@@ -7,6 +7,7 @@ HKUST(GZ) AI Assistant 统一入口
 import asyncio
 import os
 import sys
+import argparse
 from typing import Literal, Optional, Dict, Any
 from enum import Enum
 
@@ -36,6 +37,7 @@ class HKUSTAIAssistant:
         self.mode = mode
         self.agent: Optional[Agent] = None
         self.is_initialized = False
+        self.voice_active = False  # 语音模式激活状态
         
         # 根据模式配置不同的系统提示
         self.system_prompts = {
@@ -65,6 +67,12 @@ class HKUSTAIAssistant:
 - 提供具体的学习建议
 - 引用可靠的学术资源
 - 鼓励创新思维
+
+🎤 **语音模式激活**：
+当用户要求"切换到语音模式"、"启动语音交互"、"开始语音对话"时，
+你需要提醒用户使用命令：
+- 命令行启动: 添加 --voice-interactive 参数
+- 交互中切换: 输入 'voice' 或 '语音模式'
 
 请用专业但友好的方式回答学术相关问题，帮助用户在学习和研究中取得进步。"""
 
@@ -141,6 +149,64 @@ class HKUSTAIAssistant:
                 "message": "助手初始化失败"
             }
     
+    async def activate_voice_mode(self) -> Dict[str, Any]:
+        """
+        在当前会话中激活语音模式
+        
+        Returns:
+            激活结果
+        """
+        try:
+            if self.mode != AssistantMode.VOICE_INTERACTION:
+                # 切换到语音交互模式
+                switch_result = await self.switch_mode(AssistantMode.VOICE_INTERACTION)
+                if not switch_result["success"]:
+                    return switch_result
+            
+            self.voice_active = True
+            
+            return {
+                "success": True,
+                "message": "语音模式已激活",
+                "instructions": [
+                    "🎙️ 语音输入已启用",
+                    "🔊 语音输出已启用", 
+                    "🎯 支持倪校长语音包",
+                    "📋 输入 'voice off' 来关闭语音模式"
+                ]
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "激活语音模式失败"
+            }
+    
+    async def deactivate_voice_mode(self) -> Dict[str, Any]:
+        """
+        关闭语音模式，返回文本模式
+        
+        Returns:
+            关闭结果
+        """
+        try:
+            self.voice_active = False
+            
+            return {
+                "success": True,
+                "message": "已返回文本模式",
+                "instructions": [
+                    "💬 当前为文本交互模式",
+                    "🎤 输入 'voice' 或 '语音模式' 来重新激活语音"
+                ]
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "关闭语音模式失败"
+            }
+    
     async def process_query(self, query: str) -> str:
         """
         处理用户查询
@@ -154,8 +220,32 @@ class HKUSTAIAssistant:
         if not self.is_initialized or not self.agent:
             return "❌ 助手尚未初始化，请先调用 initialize() 方法"
         
+        # 检查语音模式切换指令
+        if query.lower() in ['voice', '语音模式', 'voice on', '启动语音', '开始语音']:
+            result = await self.activate_voice_mode()
+            if result["success"]:
+                # 启动语音助手
+                voice_start = await self.agent.process_query("启动语音助手")
+                return f"{result['message']}\n\n{voice_start}\n\n" + "\n".join(result["instructions"])
+            else:
+                return result["message"]
+        
+        elif query.lower() in ['voice off', '关闭语音', '文本模式', 'text mode']:
+            result = await self.deactivate_voice_mode()
+            if result["success"]:
+                # 停止语音助手
+                voice_stop = await self.agent.process_query("停止语音助手")
+                return f"{result['message']}\n\n{voice_stop}\n\n" + "\n".join(result["instructions"])
+            else:
+                return result["message"]
+        
         try:
             response = await self.agent.process_query(query)
+            
+            # 如果语音模式激活，添加语音状态提示
+            if self.voice_active:
+                response += "\n\n🎤 [语音模式已激活 | 输入 'voice off' 关闭]"
+            
             return response
         except Exception as e:
             return f"❌ 处理查询时出现错误: {str(e)}"
@@ -243,36 +333,91 @@ async def quick_start_voice_mode() -> HKUSTAIAssistant:
 
 # 统一的命令行入口
 async def main():
-    """主函数 - 提供交互式选择"""
+    """主函数 - 支持命令行参数和交互式选择"""
+    parser = argparse.ArgumentParser(description='HKUST(GZ) AI Assistant')
+    parser.add_argument('--mode', '-m', choices=['academic', 'voice'], 
+                       help='启动模式: academic (学术问答) 或 voice (语音交互)')
+    parser.add_argument('--voice-interactive', '-v', action='store_true',
+                       help='直接启动语音交互模式')
+    parser.add_argument('--interactive', '-i', action='store_true',
+                       help='启动交互模式 (默认)')
+    parser.add_argument('--query', '-q', type=str,
+                       help='单次查询模式')
+    
+    args = parser.parse_args()
+    
     print("🎓 欢迎使用 HKUST(GZ) AI Assistant")
     print("=" * 50)
-    print("请选择模式:")
-    print("1. 📚 学术问答模式 - 专注学术咨询和研究支持")
-    print("2. 🎤 语音交互模式 - 支持语音对话和倪校语音包")
     
-    while True:
-        try:
-            choice = input("\n请输入模式编号 (1 或 2): ").strip()
-            
-            if choice == "1":
-                assistant = await quick_start_academic_mode()
-                print("✅ 学术问答模式已启动！")
-                break
-            elif choice == "2":
-                assistant = await quick_start_voice_mode()
-                print("✅ 语音交互模式已启动！")
-                break
-            else:
-                print("❌ 请输入有效的模式编号 (1 或 2)")
-                continue
+    # 确定启动模式
+    if args.voice_interactive or args.mode == 'voice':
+        mode = AssistantMode.VOICE_INTERACTION
+        print("🎤 启动语音交互模式")
+    elif args.mode == 'academic':
+        mode = AssistantMode.ACADEMIC_QA
+        print("📚 启动学术问答模式")
+    elif args.query:
+        # 单次查询默认用学术模式
+        mode = AssistantMode.ACADEMIC_QA
+        print("📝 单次查询模式")
+    else:
+        # 交互式选择模式
+        print("请选择模式:")
+        print("1. 📚 学术问答模式 - 专注学术咨询和研究支持")
+        print("2. 🎤 语音交互模式 - 支持语音对话和倪校语音包")
+        
+        while True:
+            try:
+                choice = input("\n请输入模式编号 (1 或 2): ").strip()
                 
-        except KeyboardInterrupt:
-            print("\n👋 再见！")
-            return
+                if choice == "1":
+                    mode = AssistantMode.ACADEMIC_QA
+                    print("✅ 学术问答模式已选择！")
+                    break
+                elif choice == "2":
+                    mode = AssistantMode.VOICE_INTERACTION
+                    print("✅ 语音交互模式已选择！")
+                    break
+                else:
+                    print("❌ 请输入有效的模式编号 (1 或 2)")
+                    continue
+                    
+            except KeyboardInterrupt:
+                print("\n👋 再见！")
+                return
+    
+    # 初始化助手
+    assistant = HKUSTAIAssistant(mode)
+    init_result = await assistant.initialize()
+    
+    if not init_result["success"]:
+        print(f"❌ 初始化失败: {init_result['message']}")
+        return
+    
+    print(f"✅ {init_result['message']}")
+    
+    # 处理单次查询
+    if args.query:
+        response = await assistant.process_query(args.query)
+        print(f"\n🤖 助手: {response}")
+        await assistant.shutdown()
+        return
+    
+    # 语音交互模式特殊提示
+    if args.voice_interactive:
+        print("\n🎤 语音交互模式说明:")
+        print("- 支持自然语言语音指令")
+        print("- 支持倪校长声音克隆")
+        print("- 输入文本指令也可以正常工作")
+        print("- 说 'voice off' 或 '文本模式' 可切换到文本模式")
     
     # 交互循环
-    print("\n💬 开始对话 (输入 'quit' 退出):")
-    print("-" * 30)
+    print("\n💬 开始对话:")
+    print("📋 特殊指令:")
+    print("   - 'voice' 或 '语音模式': 激活语音交互")
+    print("   - 'voice off' 或 '文本模式': 关闭语音交互") 
+    print("   - 'quit', 'exit', '退出': 结束对话")
+    print("-" * 50)
     
     try:
         while True:

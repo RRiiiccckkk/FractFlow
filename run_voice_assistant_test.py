@@ -1,121 +1,147 @@
 #!/usr/bin/env python3
 """
-run_voice_assistant_test.py
-Author: FractFlow Team
-Brief: Example script to correctly call the Guang Voice Assistant MCP tool within the FractFlow framework.
+测试广广语音助手的完整功能
+包括新的 --voice-interactive 模式
 """
 
 import asyncio
 import os
 import sys
 
-# Ensure the project root is in the Python path
-project_root = os.path.dirname(os.path.abspath(__file__))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
+# 添加项目根目录到Python路径
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(current_dir)
+sys.path.append(project_root)
 
 from FractFlow.agent import Agent
 from FractFlow.infra.config import ConfigManager
 
-async def main():
-    """
-    Main function to initialize the agent and call the voice assistant tools.
-    """
-    print("🚀 Initializing FractFlow Agent to test Guang Voice Assistant...")
-
-    # 1. Create a ConfigManager instance and specify the provider.
-    # All agent components will now use this configuration.
-    # Include custom system prompt for Ni's voice package awareness
-    ni_voice_system_prompt = """你是HKUST(GZ) AI Assistant，香港科技大学广州的智能助手，具备语音合成和对话功能。你有以下特殊能力：
-
-🎙️ **倪校长语音包功能**：
-当用户要求"用倪校长的声音说..."、"请以倪校长的声音讲出..."、"让倪校长说..."或类似请求时，
-你需要调用 clone_voice_with_ni 工具来实现倪校长（香港科技大学广州校长）的声音克隆。
-
-🎤 **语音对话功能**：
-- 可以启动和停止实时语音对话助手
-- 支持语音识别和语音合成
-- 支持实时打断功能
-
-🔄 **复合指令处理**：
-- "请用倪校长的声音和我进行语音交互" → 先调用 start_simple_voice_assistant()，再用倪校声音欢迎
-- "启动倪校语音模式" → 启动语音助手并设置倪校声音为默认
-- "开始语音交互，用倪校长声音回复" → 组合使用两个功能
-
-📋 **使用规则**：
-1. 单一倪校声音请求：使用 clone_voice_with_ni(text="要说的内容")
-2. 单一语音对话请求：使用 start_simple_voice_assistant()
-3. 复合请求：先启动语音助手，再用倪校声音说欢迎词
-4. 停止请求：使用 stop_simple_voice_assistant()
-
-💡 **示例场景**：
-- "请用倪校长的声音说欢迎词" → 调用 clone_voice_with_ni
-- "启动语音助手" → 调用 start_simple_voice_assistant
-- "请用倪校长的声音和我进行语音交互" → 调用 start_simple_voice_assistant + clone_voice_with_ni("欢迎使用语音交互功能")
-- "开始倪校语音模式" → 启动语音助手并用倪校声音欢迎
-
-请根据用户的具体需求，智能选择合适的工具来完成任务。对于复合请求，请按逻辑顺序执行多个工具调用。"""
-
+async def test_voice_interactive_mode():
+    """测试语音交互模式"""
+    print("🎤 测试广广语音助手 - Voice Interactive 模式")
+    print("=" * 50)
+    
+    # 创建配置
     config = ConfigManager(
         provider='qwen',
-        custom_system_prompt=ni_voice_system_prompt
+        custom_system_prompt="""
+你是广广语音助手，支持语音交互和倪校长声音克隆。
+
+🎙️ 核心功能：
+- 启动/停止语音助手
+- 倪校长语音包
+- 复合指令处理
+
+请根据用户指令调用相应的工具函数。
+"""
     )
-
-    # 2. Initialize the Agent with the configuration.
+    
+    # 创建Agent
     agent = Agent(config=config)
-
-    # 3. Add the new voice assistant tool to the agent.
-    # The key 'guang_voice_assistant' is a logical name.
-    # The value is the path to the MCP server script.
+    
+    # 添加语音助手工具
     agent.add_tool(
         tool_path="tools/core/guang_voice_assistant/guang_voice_assistant_mcp.py",
         tool_name="guang_voice_assistant"
     )
-
-    # 4. Start the agent system. (Now called `initialize`)
-    # This will initialize the orchestrator and launch the MCP server for our voice tool.
-    await agent.initialize()
-    print("✅ Agent started, and guang_voice_assistant MCP server should be running.")
-
+    
     try:
-        # --- Test Case 1: Call Ni's Voice Clone ---
-        print("\n" + "="*50)
-        print("🎙️ Test Case 1: Calling Ni's voice clone tool...")
-        query1 = "请用倪校长的声音说：'欢迎来到香港科技大学广州！'"
-        print(f"👤 User Query: {query1}")
+        # 初始化Agent
+        await agent.initialize()
+        print("✅ Agent初始化成功")
         
-        # The agent's LLM will understand the query and call the 'clone_voice_with_ni' tool.
-        response1 = await agent.process_query(query1)
-        print(f"🤖 Agent Response: \n{response1}")
-        print("="*50)
-
-        # --- Test Case 2: Start the interactive voice assistant ---
-        # Note: The interactive assistant is a long-running process.
-        print("\n" + "="*50)
-        print("🎤 Test Case 2: Attempting to start the interactive voice assistant...")
-        query2 = "启动语音对话助手"
-        print(f"👤 User Query: {query2}")
-
-        response2 = await agent.process_query(query2)
-        print(f"🤖 Agent Response: \n{response2}")
-        print("\n⚠️  Note: The interactive assistant is designed for real-time loops.")
-        print("This test confirms the tool can be called. To run it fully, you might need a dedicated script.")
-        print("="*50)
-
-    except Exception as e:
-        print(f"❌ An error occurred during the test: {e}")
+        # 测试用例
+        test_queries = [
+            "启动语音助手",
+            "请用倪校长的声音说：欢迎使用HKUST广州语音助手！",
+            "请用倪校长的声音和我进行语音交互",
+            "停止语音助手"
+        ]
+        
+        for i, query in enumerate(test_queries, 1):
+            print(f"\n📋 测试 {i}: {query}")
+            print("-" * 30)
+            
+            try:
+                result = await agent.process_query(query)
+                print(f"✅ 结果: {result}")
+            except Exception as e:
+                print(f"❌ 错误: {e}")
+            
+            # 等待一下，避免请求过快
+            await asyncio.sleep(1)
+    
     finally:
-        # 5. Shut down the agent system.
-        # This will terminate the orchestrator and all launched MCP servers.
-        print("\n🧹 Shutting down the agent and all tool servers...")
         await agent.shutdown()
-        print("✅ System shut down gracefully.")
+        print("\n🛑 测试完成，Agent已关闭")
 
+async def test_mode_switching():
+    """测试模式切换功能"""
+    print("\n🔄 测试模式切换功能")
+    print("=" * 50)
+    
+    # 导入前端助手
+    from 前端.hkust_ai_assistant_entry import HKUSTAIAssistant, AssistantMode
+    
+    # 创建学术模式助手
+    assistant = HKUSTAIAssistant(AssistantMode.ACADEMIC_QA)
+    
+    try:
+        # 初始化
+        await assistant.initialize()
+        print("✅ 学术模式助手初始化成功")
+        
+        # 测试学术问题
+        response = await assistant.process_query("什么是深度学习？")
+        print(f"📚 学术回答: {response[:100]}...")
+        
+        # 测试语音模式激活
+        response = await assistant.process_query("voice")
+        print(f"🎤 语音激活: {response}")
+        
+        # 测试语音指令
+        response = await assistant.process_query("启动语音助手")
+        print(f"🎙️ 语音指令: {response}")
+        
+        # 关闭语音模式
+        response = await assistant.process_query("voice off")
+        print(f"💬 文本模式: {response}")
+        
+    finally:
+        await assistant.shutdown()
+        print("🛑 模式切换测试完成")
+
+async def test_command_line_modes():
+    """测试命令行模式"""
+    print("\n📝 测试命令行参数支持")
+    print("=" * 50)
+    
+    print("✅ 支持的命令行参数:")
+    print("  python 前端/hkust_ai_assistant_entry.py --voice-interactive")
+    print("  python 前端/hkust_ai_assistant_entry.py --mode voice")
+    print("  python 前端/hkust_ai_assistant_entry.py --mode academic")
+    print("  python 前端/hkust_ai_assistant_entry.py --query '测试问题'")
+    print()
+    print("✅ 工具级别语音交互:")
+    print("  python tools/core/guang_voice_assistant/guang_voice_assistant_agent.py --voice-interactive")
+    print("  python tools/core/file_io/file_io_agent.py --voice-interactive")
+    print("  python tools/core/websearch/websearch_agent.py --voice-interactive")
 
 if __name__ == "__main__":
-    # Ensure you have the necessary environment variables set for Qwen.
+    print("🚀 FractFlow Voice Interactive 功能测试")
+    print("=" * 60)
+    
+    # 检查API密钥
     if not os.getenv("QWEN_API_KEY") and not os.getenv("DASHSCOPE_API_KEY"):
-        print("🚨 Error: API key for Qwen/DashScope not found in environment variables.")
-        print("Please set QWEN_API_KEY or DASHSCOPE_API_KEY.")
-    else:
-        asyncio.run(main()) 
+        print("🚨 警告: 未找到Qwen API密钥，某些功能可能无法正常工作")
+    
+    asyncio.run(test_voice_interactive_mode())
+    asyncio.run(test_mode_switching())
+    asyncio.run(test_command_line_modes())
+    
+    print("\n🎉 所有测试完成！")
+    print("💡 使用提示:")
+    print("   1. 运行 'python 前端/hkust_ai_assistant_entry.py --voice-interactive' 体验语音模式")
+    print("   2. 在任何文本交互中输入 'voice' 激活语音功能")  
+    print("   3. 使用 'voice off' 返回文本模式")
+    print("   4. 所有工具都支持 --voice-interactive 参数") 

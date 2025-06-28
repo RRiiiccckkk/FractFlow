@@ -391,7 +391,7 @@ class QwenRealtimeVoiceClient:
     def stop_recording(self) -> Dict[str, Any]:
         """停止录音"""
         try:
-            print("🛑 正在停止录音...")
+            # 正在停止录音（移除print避免MCP干扰）
             
             self.is_recording = False
             self.stop_event.set()
@@ -426,8 +426,6 @@ class QwenRealtimeVoiceClient:
     async def disconnect(self) -> Dict[str, Any]:
         """断开连接"""
         try:
-            print("🔌 正在断开连接...")
-            
             # 停止录音
             self.stop_recording()
             

@@ -371,6 +371,40 @@ python tools/core/visual_question_answer/vqa_agent.py --query "Image: /path/to/i
 python tools/core/visual_question_answer/vqa_agent.py --query "Image: /path/to/photo.png Describe the scene in detail"
 ```
 
+#### Realtime Voice Interactive - 实时语音交互助手
+
+FractFlow 提供先进的实时语音交互系统，支持默认音色和倪校长声音克隆（including nixiao）：
+
+```bash
+# 默认音色模式（千问Omni语音）
+python tools/core/realtime_voice_interactive/realtime_voice_interactive.py
+
+# 倪校长音色模式（声音克隆+流式TTS）
+python tools/core/realtime_voice_interactive/realtime_voice_interactive.py ni
+
+# 前端集成版（推荐）
+python 前端/hkust_ai_assistant_entry.py --mode voice
+```
+
+**功能特色**：
+- 🎤 **实时语音识别**：自然中文语音输入，自动转换为文本
+- 🔊 **双音色模式**：系统默认音色 + 倪校长克隆音色
+- ⚡ **极速打断机制**：0.01ms响应时间，多级打断处理
+- 🎵 **动态音量检测**：自适应背景噪音校准和连续性验证  
+- 🚀 **流式TTS播放**：逐句生成播放，大幅提升响应速度
+- 🧠 **分形智能**：支持嵌套Agent调用，自然语言优先
+- 🎯 **企业级体验**：专业级语音交互解决方案
+
+**音色模式对比**：
+- **默认模式**：使用千问Omni内置语音，快速可靠的对话体验
+- **倪校模式**：采用声音克隆技术，流式分句播放，智能语音分割
+
+**使用说明**：
+- 自然说话提问
+- 系统会在您开始说话时自动打断AI回答
+- 等待AI完整回答后继续对话
+- 按 Ctrl+C 退出系统
+
 ### 复合工具
 
 #### Visual Article Agent - 图文并茂文章生成器

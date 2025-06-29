@@ -370,6 +370,40 @@ python tools/core/visual_question_answer/vqa_agent.py --query "Image: /path/to/i
 python tools/core/visual_question_answer/vqa_agent.py --query "Image: /path/to/photo.png Describe the scene in detail"
 ```
 
+#### Realtime Voice Interactive - Real-time Voice Assistant
+
+FractFlow provides an advanced real-time voice interaction system with support for both default voice and Principal Ni's voice cloning (including nixiao):
+
+```bash
+# Default voice mode (Qwen Omni voice)
+python tools/core/realtime_voice_interactive/realtime_voice_interactive.py
+
+# Principal Ni's voice mode (voice cloning with streaming TTS)  
+python tools/core/realtime_voice_interactive/realtime_voice_interactive.py ni
+
+# Frontend integration (recommended)
+python 前端/hkust_ai_assistant_entry.py --mode voice
+```
+
+**Feature Highlights**:
+- 🎤 **Real-time Speech Recognition**: Natural Chinese voice input with automatic text conversion
+- 🔊 **Dual Voice Modes**: Default system voice + Principal Ni's cloned voice  
+- ⚡ **Ultra-fast Interruption**: 0.01ms response time with multi-level interruption mechanism
+- 🎵 **Dynamic Volume Detection**: Adaptive background noise calibration and continuity verification
+- 🚀 **Streaming TTS Playback**: Sentence-by-sentence generation for dramatically improved response speed
+- 🧠 **Fractal Intelligence**: Nested agent calling with natural language priority
+- 🎯 **Enterprise-grade Experience**: Professional voice interaction solution
+
+**Voice Mode Comparison**:
+- **Default Mode**: Uses Qwen Omni's built-in voice for fast, reliable conversations
+- **Principal Ni Mode**: Features voice cloning technology with streaming sentence playback and intelligent segmentation
+
+**Usage Instructions**:
+- Speak naturally to ask questions
+- The system automatically interrupts AI responses when you start speaking
+- Wait for complete AI responses before continuing the conversation
+- Press Ctrl+C to exit
+
 ### Composite Tools
 
 #### Visual Article Agent - Illustrated Article Generator

@@ -94,9 +94,9 @@ class NiXiaoInterruptVoiceAssistant(SimpleVoiceAssistant):
                 # 移除output_audio_format，禁用千问TTS
                 "turn_detection": {
                     "type": "server_vad",
-                    "threshold": 0.15,
-                    "prefix_padding_ms": 300,
-                    "silence_duration_ms": 700
+                    "threshold": 0.1,  # 更敏感的检测阈值
+                    "prefix_padding_ms": 200,  # 减少前缀延迟
+                    "silence_duration_ms": 500  # 更快的静音判断
                 },
                 "temperature": 0.7,
                 "max_response_output_tokens": 2048
@@ -139,7 +139,7 @@ class NiXiaoInterruptVoiceAssistant(SimpleVoiceAssistant):
             
             print(f"🔊 正在生成倪校语音: {text[:30]}...")
             
-            response = requests.get(GPT_SOVITS_URL, params=params, stream=True, timeout=30)
+            response = requests.get(GPT_SOVITS_URL, params=params, stream=True, timeout=10)
             
             if response.status_code == 200:
                 audio_data = b""
@@ -219,10 +219,46 @@ class NiXiaoInterruptVoiceAssistant(SimpleVoiceAssistant):
             if not self.interrupt_detected:
                 print(f"❌ WAV音频播放错误: {e}")
     
+    def _safe_create_task(self, coro):
+        """安全地创建异步任务，处理事件循环问题"""
+        try:
+            # 尝试获取当前事件循环
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                return loop.create_task(coro)
+            else:
+                # 如果循环未运行，尝试使用默认循环
+                return asyncio.create_task(coro)
+        except RuntimeError as e:
+            if "attached to a different loop" in str(e) or "no running event loop" in str(e):
+                # 事件循环问题，使用线程安全方式
+                try:
+                    loop = asyncio.get_running_loop()
+                    return loop.create_task(coro)
+                except RuntimeError:
+                    # 降级到后台线程执行
+                    import threading
+                    def run_coro():
+                        try:
+                            new_loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(new_loop)
+                            new_loop.run_until_complete(coro)
+                        except Exception as e:
+                            print(f"❌ 后台任务执行失败: {e}")
+                        finally:
+                            new_loop.close()
+                    
+                    thread = threading.Thread(target=run_coro)
+                    thread.daemon = True
+                    thread.start()
+                    return None
+            else:
+                raise e
+
     async def _handle_responses(self):
         """处理AI响应 - 重写以集成GPT-SoVITS"""
         try:
-            message = await asyncio.wait_for(self.websocket.recv(), timeout=0.01)
+            message = await asyncio.wait_for(self.websocket.recv(), timeout=0.1)
             data = json.loads(message)
             response_type = data.get("type", "")
             
@@ -238,14 +274,21 @@ class NiXiaoInterruptVoiceAssistant(SimpleVoiceAssistant):
                 if not self.interrupt_detected and self.current_ai_response.strip():
                     print(f"💬 倪校: {self.current_ai_response.strip()}")
                     
-                    # 异步调用GPT-SoVITS生成音频
+                    # 安全调用GPT-SoVITS生成音频
                     if self.gptsovits_available:
-                        asyncio.create_task(self._generate_and_play_nixiao_voice(self.current_ai_response.strip()))
+                        try:
+                            self._safe_create_task(self._generate_and_play_nixiao_voice(self.current_ai_response.strip()))
+                        except Exception as e:
+                            print(f"⚠️ 创建音频生成任务失败: {e}")
                     
                     # 检测搜索触发
                     if self.detect_search_trigger(self.current_ai_response) and not self.search_in_progress:
                         self.search_in_progress = True
-                        asyncio.create_task(self._handle_search_trigger())
+                        try:
+                            self._safe_create_task(self._handle_search_trigger())
+                        except Exception as e:
+                            print(f"⚠️ 创建搜索任务失败: {e}")
+                            self.search_in_progress = False
                     
                     self.current_ai_response = ""
             
@@ -420,7 +463,7 @@ class NiXiaoInterruptVoiceAssistant(SimpleVoiceAssistant):
                     await self._send_audio_chunk(audio_data)
                     audio_chunks_sent += 1
                 await self._handle_responses()
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0.01)
             except websockets.exceptions.ConnectionClosed:
                 print("⚠️ WebSocket连接已断开，尝试自动重连...")
                 await self._reconnect()

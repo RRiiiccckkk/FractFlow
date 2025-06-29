@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Simple Voice Agent Test Script
+Realtime Voice Interactive Test Script
 Author: FractFlow Team
-Brief: Test script for Simple Voice Agent with enhanced interrupt capabilities
+Brief: Test script for Realtime Voice Interactive Assistant with enhanced interrupt capabilities
 """
 
 import asyncio
@@ -20,34 +20,34 @@ def test_import_modules():
     
     try:
         # 测试核心模块
-        from tools.core.simple_voice_agent.simple_voice_agent import SimpleVoiceAgent, run_simple_voice_agent
-        print("✅ SimpleVoiceAgent 导入成功")
+        from tools.core.realtime_voice_interactive.realtime_voice_interactive import RealtimeVoiceInteractiveAgent, run_realtime_voice_interactive
+        print("✅ RealtimeVoiceInteractiveAgent 导入成功")
         
         # 测试MCP服务器函数
-        from tools.core.simple_voice_agent.simple_voice_agent_mcp import (
-            start_simple_voice_assistant,
-            stop_simple_voice_assistant,
-            get_voice_assistant_status
+        from tools.core.realtime_voice_interactive.realtime_voice_interactive_mcp import (
+            start_realtime_voice_interactive,
+            stop_realtime_voice_interactive,
+            get_voice_interactive_status
         )
-        from tools.core.simple_voice_agent.ni_voice_agent_mcp import (
-            start_ni_voice_assistant,
-            stop_ni_voice_assistant,
-            get_ni_voice_assistant_status,
+        from tools.core.realtime_voice_interactive.ni_realtime_voice_interactive_mcp import (
+            start_ni_realtime_voice_interactive,
+            stop_ni_realtime_voice_interactive,
+            get_ni_voice_interactive_status,
             clone_voice_with_ni
         )
         print("✅ MCP服务器模块导入成功")
         
         # 测试Agent模块
-        from tools.core.simple_voice_agent.simple_voice_agent_agent import SimpleVoiceAgentAgent
-        from tools.core.simple_voice_agent.ni_voice_agent_agent import NiVoiceAgentAgent
+        from tools.core.realtime_voice_interactive.realtime_voice_interactive_agent import RealtimeVoiceInteractiveAgent
+        from tools.core.realtime_voice_interactive.ni_realtime_voice_interactive_agent import NiRealtimeVoiceInteractiveAgent
         print("✅ Agent代理模块导入成功")
         
         # 测试配置模块
-        from tools.core.simple_voice_agent.voice_config import setup_api_keys, get_voice_session_config
+        from tools.core.realtime_voice_interactive.voice_config import setup_api_keys, get_voice_session_config
         print("✅ 配置模块导入成功")
         
         # 测试倪校TTS中断功能
-        from tools.core.guang_voice_assistant.ni_voice_clone_client.main import set_interrupt, clear_interrupt, is_interrupted
+        from tools.core.realtime_voice_interactive.ni_voice_clone_client.main import set_interrupt, clear_interrupt, is_interrupted
         print("✅ 倪校TTS中断控制导入成功")
         
         return True
@@ -61,7 +61,7 @@ def test_interrupt_mechanism():
     print("\n🧪 测试快速中断机制...")
     
     try:
-        from tools.core.guang_voice_assistant.ni_voice_clone_client.main import set_interrupt, clear_interrupt, is_interrupted
+        from tools.core.realtime_voice_interactive.ni_voice_clone_client.main import set_interrupt, clear_interrupt, is_interrupted
         
         # 测试中断信号设置和清除
         clear_interrupt()
@@ -84,13 +84,13 @@ def test_interrupt_mechanism():
 
 def test_voice_agent_init():
     """测试语音助手初始化"""
-    print("\n🧪 测试语音助手初始化...")
+    print("\n🧪 测试实时语音交互助手初始化...")
     
     try:
-        from tools.core.simple_voice_agent.simple_voice_agent import SimpleVoiceAgent
+        from tools.core.realtime_voice_interactive.realtime_voice_interactive import RealtimeVoiceInteractiveAgent
         
         # 测试默认模式初始化
-        agent_default = SimpleVoiceAgent(api_key="test", voice_mode="default")
+        agent_default = RealtimeVoiceInteractiveAgent(api_key="test", voice_mode="default")
         assert agent_default.voice_mode == "default"
         assert hasattr(agent_default, 'tts_interrupt_event')
         assert hasattr(agent_default, 'volume_threshold')
@@ -98,7 +98,7 @@ def test_voice_agent_init():
         print("✅ 默认模式初始化检查通过")
         
         # 测试倪校模式初始化
-        agent_ni = SimpleVoiceAgent(api_key="test", voice_mode="ni")
+        agent_ni = RealtimeVoiceInteractiveAgent(api_key="test", voice_mode="ni")
         assert agent_ni.voice_mode == "ni"
         assert hasattr(agent_ni, 'tts_interrupt_event')
         assert hasattr(agent_ni, 'volume_samples')
@@ -113,7 +113,7 @@ def test_voice_agent_init():
         return True
         
     except Exception as e:
-        print(f"❌ 语音助手初始化测试失败: {e}")
+        print(f"❌ 实时语音交互助手初始化测试失败: {e}")
         return False
 
 def test_multilevel_interrupt():
@@ -121,10 +121,10 @@ def test_multilevel_interrupt():
     print("\n🧪 测试多级打断机制...")
     
     try:
-        from tools.core.simple_voice_agent.simple_voice_agent import SimpleVoiceAgent
+        from tools.core.realtime_voice_interactive.realtime_voice_interactive import RealtimeVoiceInteractiveAgent
         
         # 创建倪校模式agent
-        agent = SimpleVoiceAgent(api_key="test", voice_mode="ni")
+        agent = RealtimeVoiceInteractiveAgent(api_key="test", voice_mode="ni")
         
         # 模拟AI正在说话状态
         agent.is_ai_speaking = True
@@ -151,13 +151,13 @@ def test_multilevel_interrupt():
 
 async def test_voice_agent_performance():
     """测试语音助手性能（模拟）"""
-    print("\n🧪 测试语音助手性能响应...")
+    print("\n🧪 测试实时语音交互助手性能响应...")
     
     try:
-        from tools.core.simple_voice_agent.simple_voice_agent import SimpleVoiceAgent
+        from tools.core.realtime_voice_interactive.realtime_voice_interactive import RealtimeVoiceInteractiveAgent
         
         # 创建agent
-        agent = SimpleVoiceAgent(api_key="test", voice_mode="ni")
+        agent = RealtimeVoiceInteractiveAgent(api_key="test", voice_mode="ni")
         
         # 模拟快速打断场景
         start_time = time.time()
@@ -181,33 +181,32 @@ async def test_voice_agent_performance():
         return True
         
     except Exception as e:
-        print(f"❌ 语音助手性能测试失败: {e}")
+        print(f"❌ 实时语音交互助手性能测试失败: {e}")
         return False
 
 def test_mcp_servers():
-    """测试MCP服务器启动"""
+    """测试MCP服务器功能"""
     print("\n🧪 测试MCP服务器功能...")
     
     try:
         # 测试默认模式MCP功能
-        from tools.core.simple_voice_agent.simple_voice_agent_mcp import (
-            start_simple_voice_assistant,
-            get_voice_assistant_status
+        from tools.core.realtime_voice_interactive.realtime_voice_interactive_mcp import (
+            get_voice_interactive_status
         )
         
         # 测试状态查询
-        status = get_voice_assistant_status()
+        status = get_voice_interactive_status()
         assert isinstance(status, str), "状态应该返回字符串"
         print("✅ 默认模式MCP功能测试通过")
         
         # 测试倪校模式MCP功能
-        from tools.core.simple_voice_agent.ni_voice_agent_mcp import (
-            get_ni_voice_assistant_status,
+        from tools.core.realtime_voice_interactive.ni_realtime_voice_interactive_mcp import (
+            get_ni_voice_interactive_status,
             clone_voice_with_ni
         )
         
         # 测试倪校状态查询
-        ni_status = get_ni_voice_assistant_status()
+        ni_status = get_ni_voice_interactive_status()
         assert isinstance(ni_status, str), "倪校状态应该返回字符串"
         print("✅ 倪校模式MCP功能测试通过")
         
@@ -219,14 +218,14 @@ def test_mcp_servers():
 
 async def run_all_tests():
     """运行所有测试"""
-    print("🏫 Simple Voice Agent 增强版测试套件")
+    print("🏫 Realtime Voice Interactive 增强版测试套件")
     print("🎓 Enhanced Interrupt & Performance Test Suite")
     print("=" * 60)
     
     tests = [
         ("模块导入", test_import_modules()),
         ("中断机制", test_interrupt_mechanism()),
-        ("语音助手初始化", test_voice_agent_init()),
+        ("实时语音交互助手初始化", test_voice_agent_init()),
         ("多级打断机制", test_multilevel_interrupt()),
         ("性能响应", await test_voice_agent_performance()),
         ("MCP服务器", test_mcp_servers()),
@@ -244,13 +243,14 @@ async def run_all_tests():
     print(f"📊 测试结果: {passed}/{total} 通过")
     
     if passed == total:
-        print("🎉 所有测试通过！增强版语音助手已准备就绪！")
+        print("🎉 所有测试通过！增强版实时语音交互助手已准备就绪！")
         print("\n🚀 新功能亮点:")
         print("   • ⚡ 100-300ms极速打断响应")
         print("   • 🔊 动态音量检测+环境适应")
         print("   • 🛑 多级打断机制")
         print("   • 🎯 智能连续性验证")
         print("   • 🚀 倪校TTS流式播放优化")
+        print("   • 🎓 包含倪校声音克隆技术")
     else:
         print(f"⚠️ {total - passed} 个测试失败，请检查相关模块")
     

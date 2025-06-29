@@ -323,17 +323,38 @@ python 前端/hkust_ai_assistant_entry.py --interactive
 👤 您: 文本模式
 ```
 
-### 🎯 广广语音助手专用工具
+### 🎤 实时语音交互功能
+
+### 实时语音交互助手 - 支持双音色模式(including nixiao)
 
 ```bash
-# 专门的语音助手工具
-python tools/core/guang_voice_assistant/guang_voice_assistant_agent.py --voice-interactive
+# 启动默认音色版本
+python tools/core/realtime_voice_interactive/realtime_voice_interactive_agent.py --voice-interactive
 
-# 支持的语音指令：
-# - "启动语音助手" 
-# - "请用倪校长的声音说欢迎词"
-# - "开始倪校语音模式"
-# - "停止语音助手"
+# 启动倪校音色版本（包含声音克隆）
+python tools/core/realtime_voice_interactive/ni_realtime_voice_interactive_agent.py --voice-interactive
+
+# 交互模式
+python tools/core/realtime_voice_interactive/realtime_voice_interactive_agent.py --interactive
+```
+
+### 核心功能特性
+- ⚡ 智能快速打断：100-300ms极速响应
+- 🔊 动态音量检测：自动环境噪音适应
+- 🚀 流式TTS播放：边生成边播放（倪校版）
+- 🛑 多级打断机制：立即音频停止+队列清理
+- 🎓 倪校声音克隆：使用GPT-SoVITS技术
+
+## 🛠 工具配置
+
+### 注册工具到编排器
+
+```python
+tools_config = {
+    # ... existing tools ...
+    ("tools/core/realtime_voice_interactive/realtime_voice_interactive_mcp.py", "realtime_voice_interactive"),
+    ("tools/core/realtime_voice_interactive/ni_realtime_voice_interactive_mcp.py", "ni_realtime_voice_interactive")
+}
 ```
 
 ## 💡 高级使用技巧
@@ -414,7 +435,7 @@ export QWEN_API_KEY="your_qwen_key_here"
 python 前端/hkust_ai_assistant_entry.py --voice-interactive
 
 # 测试基础语音助手
-python tools/core/guang_voice_assistant/guang_voice_assistant_agent.py --voice-interactive
+python tools/core/realtime_voice_interactive/realtime_voice_interactive_agent.py --voice-interactive
 
 # 检查倪校语音包
 curl http://localhost:7861/health  # TTS服务器状态
@@ -444,10 +465,10 @@ python -c "import pyaudio; print('PyAudio available')"
 ```bash
 # 启用详细日志
 export FRACTFLOW_DEBUG=1
-python tools/core/guang_voice_assistant/guang_voice_assistant_agent.py --voice-interactive
+python tools/core/realtime_voice_interactive/realtime_voice_interactive_agent.py --voice-interactive
 
 # 检查语音工具状态
-python tools/core/guang_voice_assistant/guang_voice_assistant_agent.py --interactive
+python tools/core/realtime_voice_interactive/realtime_voice_interactive_agent.py --interactive
 # 输入: 启动语音助手
 # 输入: 语音状态查询
 ```
@@ -505,7 +526,8 @@ class MultiModalAgent(ToolTemplate):
     TOOLS = [
         ("tools/core/file_io/file_io_mcp.py", "file_ops"),
         ("tools/core/gpt_imagen/gpt_imagen_mcp.py", "image_gen"),
-        ("tools/core/guang_voice_assistant/guang_voice_assistant_mcp.py", "voice_assistant")
+        ("tools/core/realtime_voice_interactive/realtime_voice_interactive_mcp.py", "realtime_voice_interactive"),
+        ("tools/core/realtime_voice_interactive/ni_realtime_voice_interactive_mcp.py", "ni_realtime_voice_interactive")
     ]
 
 # 使用多模态功能

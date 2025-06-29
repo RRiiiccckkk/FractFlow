@@ -128,8 +128,12 @@ class HKUSTAIAssistant:
             # 如果是语音交互模式，注册语音助手工具
             if self.mode == AssistantMode.VOICE_INTERACTION:
                 self.agent.add_tool(
-                    tool_path="tools/core/guang_voice_assistant/guang_voice_assistant_mcp.py",
-                    tool_name="guang_voice_assistant"
+                    tool_path="tools/core/realtime_voice_interactive/realtime_voice_interactive_mcp.py",
+                    tool_name="realtime_voice_interactive"
+                )
+                self.agent.add_tool(
+                    tool_path="tools/core/realtime_voice_interactive/ni_realtime_voice_interactive_mcp.py",
+                    tool_name="ni_realtime_voice_interactive"
                 )
             
             # 启动Agent

@@ -41,8 +41,8 @@ async def test_voice_interactive_mode():
     
     # 添加语音助手工具
     agent.add_tool(
-        tool_path="tools/core/guang_voice_assistant/guang_voice_assistant_mcp.py",
-        tool_name="guang_voice_assistant"
+        tool_path="tools/core/realtime_voice_interactive/realtime_voice_interactive_mcp.py",
+        tool_name="realtime_voice_interactive"
     )
     
     try:
@@ -123,7 +123,7 @@ async def test_command_line_modes():
     print("  python 前端/hkust_ai_assistant_entry.py --query '测试问题'")
     print()
     print("✅ 工具级别语音交互:")
-    print("  python tools/core/guang_voice_assistant/guang_voice_assistant_agent.py --voice-interactive")
+    print("  python tools/core/realtime_voice_interactive/realtime_voice_interactive_agent.py --voice-interactive")
     print("  python tools/core/file_io/file_io_agent.py --voice-interactive")
     print("  python tools/core/websearch/websearch_agent.py --voice-interactive")
 

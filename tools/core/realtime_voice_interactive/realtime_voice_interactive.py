@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Simple Voice Agent for HKUST-GZ
+Realtime Voice Interactive Agent for HKUST-GZ
 Author: FractFlow Team
-Brief: Simplified voice assistant without web search functionality
-Supports both default voice and Ni voice modes
+Brief: Realtime voice interactive assistant without web search functionality
+Supports both default voice and Ni voice modes (including nixiao)
 """
 
 import asyncio
@@ -26,8 +26,8 @@ except ImportError:
 from tools.core.qwen_realtime_voice.qwen_realtime_voice_mcp import QwenRealtimeVoiceClient
 from .voice_config import setup_api_keys, get_voice_session_config
 
-class SimpleVoiceAgent(QwenRealtimeVoiceClient):
-    """极简版语音助手 - 支持双音色模式"""
+class RealtimeVoiceInteractiveAgent(QwenRealtimeVoiceClient):
+    """实时语音交互助手 - 支持双音色模式（包含倪校）"""
     
     def __init__(self, api_key=None, voice_mode="default"):
         super().__init__(api_key)
@@ -137,7 +137,7 @@ class SimpleVoiceAgent(QwenRealtimeVoiceClient):
             # 第二级：立即停止倪校TTS播放
             if self.voice_mode == "ni":
                 try:
-                    from tools.core.guang_voice_assistant.ni_voice_clone_client.main import set_interrupt
+                    from tools.core.realtime_voice_interactive.ni_voice_clone_client.main import set_interrupt
                     set_interrupt()  # 立即中断TTS播放
                 except ImportError:
                     pass
@@ -400,7 +400,7 @@ class SimpleVoiceAgent(QwenRealtimeVoiceClient):
             # 立即停止倪校TTS播放
             if self.voice_mode == "ni":
                 try:
-                    from tools.core.guang_voice_assistant.ni_voice_clone_client.main import set_interrupt
+                    from tools.core.realtime_voice_interactive.ni_voice_clone_client.main import set_interrupt
                     set_interrupt()
                 except ImportError:
                     pass
@@ -416,7 +416,7 @@ class SimpleVoiceAgent(QwenRealtimeVoiceClient):
         """TTS队列处理器 - 增强中断响应"""
         try:
             # 导入倪校TTS功能
-            from tools.core.guang_voice_assistant.ni_voice_clone_client.main import play_ni_voice
+            from tools.core.realtime_voice_interactive.ni_voice_clone_client.main import play_ni_voice
             
             while not self.tts_stop_event.is_set():
                 try:
@@ -478,11 +478,11 @@ class SimpleVoiceAgent(QwenRealtimeVoiceClient):
         except Exception as e:
             print(f"⚠️ 分句处理失败: {e}，降级为文本显示")
 
-async def run_simple_voice_agent(voice_mode="default"):
-    """运行极简版语音助手"""
+async def run_realtime_voice_interactive(voice_mode="default"):
+    """运行实时语音交互助手"""
     mode_name = "默认音色版" if voice_mode == "default" else "倪校音色版（流式TTS）"
-    print(f"🏫 香港科技大学广州智能语音助手 - {mode_name}")
-    print("🎓 HKUST-GZ Intelligent Voice Assistant - Simple Edition")
+    print(f"🏫 香港科技大学广州实时语音交互助手 - {mode_name}")
+    print("🎓 HKUST-GZ Realtime Voice Interactive Assistant")
     print("=" * 60)
     
     setup_api_keys()
@@ -492,7 +492,7 @@ async def run_simple_voice_agent(voice_mode="default"):
         print("❌ 未找到API密钥")
         return
     
-    agent = SimpleVoiceAgent(api_key, voice_mode)
+    agent = RealtimeVoiceInteractiveAgent(api_key, voice_mode)
     
     try:
         # 正在连接千问Omni API（移除print避免MCP干扰）
@@ -508,7 +508,7 @@ async def run_simple_voice_agent(voice_mode="default"):
             agent._start_tts_worker()
             print("🎓 [倪校TTS引擎已启动]")
         
-        print(f"\n✅ {mode_name}语音助手已启动！")
+        print(f"\n✅ {mode_name}实时语音交互助手已启动！")
         print("\n🎤 核心功能:")
         print("   • 实时语音对话")
         print("   • ⚡ 智能快速打断（100-300ms响应）")
@@ -542,7 +542,7 @@ async def run_simple_voice_agent(voice_mode="default"):
     except Exception as e:
         print(f"\n❌ 系统错误: {e}")
     finally:
-        print("\n🧹 正在关闭语音助手...")
+        print("\n🧹 正在关闭实时语音交互助手...")
         
         # 停止TTS工作线程
         if voice_mode == "ni":
@@ -550,10 +550,10 @@ async def run_simple_voice_agent(voice_mode="default"):
             print("🎓 [倪校TTS引擎已停止]")
         
         await agent.disconnect()
-        print("✅ 语音助手已安全关闭")
-        print("🎓 感谢使用HKUST-GZ智能语音助手！")
+        print("✅ 实时语音交互助手已安全关闭")
+        print("🎓 感谢使用HKUST-GZ实时语音交互助手！")
 
 if __name__ == "__main__":
     import sys
     voice_mode = sys.argv[1] if len(sys.argv) > 1 else "default"
-    asyncio.run(run_simple_voice_agent(voice_mode)) 
+    asyncio.run(run_realtime_voice_interactive(voice_mode)) 

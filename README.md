@@ -375,34 +375,46 @@ python tools/core/visual_question_answer/vqa_agent.py --query "Image: /path/to/p
 FractFlow provides an advanced real-time voice interaction system with support for both default voice and Principal Ni's voice cloning (including nixiao):
 
 ```bash
-# Default voice mode (Qwen Omni voice)
-python tools/core/realtime_voice_interactive/realtime_voice_interactive.py
+# Frontend integration (recommended - supports three mode selection)
+python 前端/hkust_ai_assistant_entry.py
+# Choose mode 2 (default voice) or mode 3 (Principal Ni voice)
 
-# Principal Ni's voice mode (voice cloning with streaming TTS)  
-python tools/core/realtime_voice_interactive/realtime_voice_interactive.py ni
+# Command line direct launch
+python 前端/hkust_ai_assistant_entry.py --mode voice      # Default voice mode
+python 前端/hkust_ai_assistant_entry.py --mode ni-voice   # Principal Ni voice mode
 
-# Frontend integration (recommended)
-python 前端/hkust_ai_assistant_entry.py --mode voice
+# Or use short parameters
+python 前端/hkust_ai_assistant_entry.py --voice-interactive      # Default voice
+python 前端/hkust_ai_assistant_entry.py --ni-voice-interactive   # Principal Ni voice
+
+# Direct tool invocation
+python tools/core/realtime_voice_interactive/realtime_voice_interactive.py     # Default voice
+python tools/core/realtime_voice_interactive/realtime_voice_interactive.py ni  # Principal Ni voice
 ```
+
+**🎯 Three Interactive Modes Comparison**:
+
+| Mode | Voice Source | Use Case | Technical Features |
+|------|-------------|----------|-------------------|
+| 📚 Academic Q&A | Text reply | Academic consulting, research support | Professional, rigorous, detailed |
+| 🎤 Default Voice | Qwen Omni built-in | Daily conversation, quick interaction | Stable, fast, ready-to-use |
+| 🎓 Principal Ni Voice | Voice cloning technology | Formal occasions, academic communication | Authoritative, professional, streaming playback |
 
 **Feature Highlights**:
 - 🎤 **Real-time Speech Recognition**: Natural Chinese voice input with automatic text conversion
 - 🔊 **Dual Voice Modes**: Default system voice + Principal Ni's cloned voice  
 - ⚡ **Ultra-fast Interruption**: 0.01ms response time with multi-level interruption mechanism
 - 🎵 **Dynamic Volume Detection**: Adaptive background noise calibration and continuity verification
-- 🚀 **Streaming TTS Playback**: Sentence-by-sentence generation for dramatically improved response speed
+- 🚀 **Streaming TTS Playback**: Sentence-by-sentence generation for dramatically improved response speed (Principal Ni mode)
 - 🧠 **Fractal Intelligence**: Nested agent calling with natural language priority
 - 🎯 **Enterprise-grade Experience**: Professional voice interaction solution
-
-**Voice Mode Comparison**:
-- **Default Mode**: Uses Qwen Omni's built-in voice for fast, reliable conversations
-- **Principal Ni Mode**: Features voice cloning technology with streaming sentence playback and intelligent segmentation
 
 **Usage Instructions**:
 - Speak naturally to ask questions
 - The system automatically interrupts AI responses when you start speaking
 - Wait for complete AI responses before continuing the conversation
 - Press Ctrl+C to exit
+- Support text commands: "voice off" to switch to text mode
 
 ### Composite Tools
 

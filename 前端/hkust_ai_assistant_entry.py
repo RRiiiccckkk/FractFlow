@@ -22,8 +22,9 @@ from FractFlow.infra.config import ConfigManager
 
 class AssistantMode(Enum):
     """助手模式枚举"""
-    ACADEMIC_QA = "academic_qa"      # 学术问答模式
-    VOICE_INTERACTION = "voice_interaction"  # 语音交互模式
+    ACADEMIC_QA = "academic_qa"                    # 学术问答模式
+    VOICE_INTERACTION = "voice_interaction"        # 语音交互模式（默认音色）
+    NI_VOICE_INTERACTION = "ni_voice_interaction"  # 倪校语音交互模式
 
 class HKUSTAIAssistant:
     """HKUST(GZ) AI Assistant 主类"""
@@ -43,7 +44,8 @@ class HKUSTAIAssistant:
         # 根据模式配置不同的系统提示
         self.system_prompts = {
             AssistantMode.ACADEMIC_QA: self._get_academic_qa_prompt(),
-            AssistantMode.VOICE_INTERACTION: self._get_voice_interaction_prompt()
+            AssistantMode.VOICE_INTERACTION: self._get_voice_interaction_prompt(),
+            AssistantMode.NI_VOICE_INTERACTION: self._get_ni_voice_interaction_prompt()
         }
     
     def _get_academic_qa_prompt(self) -> str:
@@ -78,12 +80,54 @@ class HKUSTAIAssistant:
 请用专业但友好的方式回答学术相关问题，帮助用户在学习和研究中取得进步。"""
 
     def _get_voice_interaction_prompt(self) -> str:
-        """获取语音交互模式的系统提示"""
-        return """你是HKUST(GZ) AI Assistant，香港科技大学广州的智能语音助手，具备语音合成和对话功能。
+        """获取语音交互模式的系统提示（默认音色）"""
+        return """你是HKUST(GZ) AI Assistant，香港科技大学广州的智能语音助手，使用默认音色进行语音交互。
+
+🎤 **默认语音对话功能**：
+- 启动和停止实时语音对话助手（默认千问Omni音色）
+- 支持语音识别和语音合成
+- 支持实时打断功能
+- 快速响应，适合日常对话
+
+📋 **使用规则**：
+1. 语音对话请求：使用 start_realtime_voice_interactive()
+2. 停止请求：使用 stop_realtime_voice_interactive()
+
+💡 **特点**：
+- 使用千问Omni内置语音，稳定可靠
+- 低延迟，适合快速对话
+- 无需额外配置，开箱即用
+
+如果用户需要倪校长声音，请建议他们选择倪校语音交互模式。"""
+
+    def _get_ni_voice_interaction_prompt(self) -> str:
+        """获取倪校语音交互模式的系统提示"""
+        return """你是HKUST(GZ) AI Assistant，香港科技大学广州的智能语音助手，专为倪校长音色设计。
+
+🎓 **倪校长专属语音功能**：
+- 启动倪校长音色的实时语音对话
+- 支持声音克隆技术
+- 流式TTS播放，自然语音节奏
+- 企业级语音交互体验
 
 🎙️ **倪校长语音包功能**：
-当用户要求"用倪校长的声音说..."、"请以倪校长的声音讲出..."、"让倪校长说..."或类似请求时，
-你需要调用 clone_voice_with_ni 工具来实现倪校长（香港科技大学广州校长）的声音克隆。
+当用户要求语音交互或声音克隆时，你需要调用相应工具：
+- clone_voice_with_ni(text="要说的内容") - 单次声音克隆
+- start_ni_realtime_voice_interactive() - 启动倪校音色语音对话
+- stop_ni_realtime_voice_interactive() - 停止语音对话
+
+💡 **特色功能**：
+- 🎓 倪校长专属音色（声音克隆技术）
+- 🚀 流式分句播放，自然语音节奏
+- ⚡ 极速打断机制（0.01ms响应时间）
+- 🎯 权威性学术对话体验
+
+📋 **使用建议**：
+- 适合正式场合和学术交流
+- 提供权威性的语音回复
+- 营造专业的交互氛围
+
+请根据用户需求选择合适的工具来完成任务。
 
 🎤 **语音对话功能**：
 - 可以启动和停止实时语音对话助手
@@ -126,8 +170,15 @@ class HKUSTAIAssistant:
             # 创建Agent
             self.agent = Agent(config=config)
             
-            # 如果是语音交互模式，注册语音助手工具
+            # 根据模式注册相应的语音助手工具
             if self.mode == AssistantMode.VOICE_INTERACTION:
+                # 默认语音交互模式：只注册默认语音工具
+                self.agent.add_tool(
+                    tool_path="tools/core/realtime_voice_interactive/realtime_voice_interactive_mcp.py",
+                    tool_name="realtime_voice_interactive"
+                )
+            elif self.mode == AssistantMode.NI_VOICE_INTERACTION:
+                # 倪校语音交互模式：同时注册两种工具
                 self.agent.add_tool(
                     tool_path="tools/core/realtime_voice_interactive/realtime_voice_interactive_mcp.py",
                     tool_name="realtime_voice_interactive"
@@ -162,8 +213,8 @@ class HKUSTAIAssistant:
             激活结果
         """
         try:
-            if self.mode != AssistantMode.VOICE_INTERACTION:
-                # 切换到语音交互模式
+            if self.mode not in [AssistantMode.VOICE_INTERACTION, AssistantMode.NI_VOICE_INTERACTION]:
+                # 切换到默认语音交互模式
                 switch_result = await self.switch_mode(AssistantMode.VOICE_INTERACTION)
                 if not switch_result["success"]:
                     return switch_result
@@ -331,8 +382,14 @@ async def quick_start_academic_mode() -> HKUSTAIAssistant:
     return assistant
 
 async def quick_start_voice_mode() -> HKUSTAIAssistant:
-    """快速启动语音交互模式"""
+    """快速启动默认语音交互模式"""
     assistant = HKUSTAIAssistant(AssistantMode.VOICE_INTERACTION)
+    await assistant.initialize()
+    return assistant
+
+async def quick_start_ni_voice_mode() -> HKUSTAIAssistant:
+    """快速启动倪校语音交互模式"""
+    assistant = HKUSTAIAssistant(AssistantMode.NI_VOICE_INTERACTION)
     await assistant.initialize()
     return assistant
 
@@ -340,10 +397,12 @@ async def quick_start_voice_mode() -> HKUSTAIAssistant:
 async def main():
     """主函数 - 支持命令行参数和交互式选择"""
     parser = argparse.ArgumentParser(description='HKUST(GZ) AI Assistant')
-    parser.add_argument('--mode', '-m', choices=['academic', 'voice'], 
-                       help='启动模式: academic (学术问答) 或 voice (语音交互)')
+    parser.add_argument('--mode', '-m', choices=['academic', 'voice', 'ni-voice'], 
+                       help='启动模式: academic (学术问答)、voice (默认语音交互) 或 ni-voice (倪校语音交互)')
     parser.add_argument('--voice-interactive', '-v', action='store_true',
-                       help='直接启动语音交互模式')
+                       help='直接启动默认语音交互模式')
+    parser.add_argument('--ni-voice-interactive', '-n', action='store_true',
+                       help='直接启动倪校语音交互模式')
     parser.add_argument('--interactive', '-i', action='store_true',
                        help='启动交互模式 (默认)')
     parser.add_argument('--query', '-q', type=str,
@@ -355,9 +414,12 @@ async def main():
     print("=" * 50)
     
     # 确定启动模式
-    if args.voice_interactive or args.mode == 'voice':
+    if args.ni_voice_interactive or args.mode == 'ni-voice':
+        mode = AssistantMode.NI_VOICE_INTERACTION
+        print("🎓 启动倪校语音交互模式")
+    elif args.voice_interactive or args.mode == 'voice':
         mode = AssistantMode.VOICE_INTERACTION
-        print("🎤 启动语音交互模式")
+        print("🎤 启动默认语音交互模式")
     elif args.mode == 'academic':
         mode = AssistantMode.ACADEMIC_QA
         print("📚 启动学术问答模式")
@@ -369,11 +431,12 @@ async def main():
         # 交互式选择模式
         print("请选择模式:")
         print("1. 📚 学术问答模式 - 专注学术咨询和研究支持")
-        print("2. 🎤 语音交互模式 - 支持语音对话和倪校语音包")
+        print("2. 🎤 默认语音交互模式 - 千问Omni语音，快速对话")
+        print("3. 🎓 倪校语音交互模式 - 倪校长音色，权威学术交流")
         
         while True:
             try:
-                choice = input("\n请输入模式编号 (1 或 2): ").strip()
+                choice = input("\n请输入模式编号 (1、2 或 3): ").strip()
                 
                 if choice == "1":
                     mode = AssistantMode.ACADEMIC_QA
@@ -381,10 +444,14 @@ async def main():
                     break
                 elif choice == "2":
                     mode = AssistantMode.VOICE_INTERACTION
-                    print("✅ 语音交互模式已选择！")
+                    print("✅ 默认语音交互模式已选择！")
+                    break
+                elif choice == "3":
+                    mode = AssistantMode.NI_VOICE_INTERACTION
+                    print("✅ 倪校语音交互模式已选择！")
                     break
                 else:
-                    print("❌ 请输入有效的模式编号 (1 或 2)")
+                    print("❌ 请输入有效的模式编号 (1、2 或 3)")
                     continue
                     
             except KeyboardInterrupt:
@@ -409,11 +476,18 @@ async def main():
         return
     
     # 语音交互模式特殊提示
-    if args.voice_interactive:
-        print("\n🎤 语音交互模式说明:")
-        print("- 支持自然语言语音指令")
-        print("- 支持倪校长声音克隆")
-        print("- 输入文本指令也可以正常工作")
+    if args.voice_interactive or mode == AssistantMode.VOICE_INTERACTION:
+        print("\n🎤 默认语音交互模式说明:")
+        print("- 使用千问Omni内置语音")
+        print("- 快速响应，适合日常对话")
+        print("- 支持实时打断功能")
+        print("- 说 'voice off' 或 '文本模式' 可切换到文本模式")
+    elif args.ni_voice_interactive or mode == AssistantMode.NI_VOICE_INTERACTION:
+        print("\n🎓 倪校语音交互模式说明:")
+        print("- 使用倪校长专属音色（声音克隆技术）")
+        print("- 流式TTS播放，自然语音节奏")
+        print("- 极速打断机制（0.01ms响应时间）")
+        print("- 适合正式场合和学术交流")
         print("- 说 'voice off' 或 '文本模式' 可切换到文本模式")
     
     # 交互循环

@@ -376,34 +376,46 @@ python tools/core/visual_question_answer/vqa_agent.py --query "Image: /path/to/p
 FractFlow 提供先进的实时语音交互系统，支持默认音色和倪校长声音克隆（including nixiao）：
 
 ```bash
-# 默认音色模式（千问Omni语音）
-python tools/core/realtime_voice_interactive/realtime_voice_interactive.py
+# 前端集成版（推荐 - 支持三种模式选择）
+python 前端/hkust_ai_assistant_entry.py
+# 选择模式 2（默认语音） 或 模式 3（倪校语音）
 
-# 倪校长音色模式（声音克隆+流式TTS）
-python tools/core/realtime_voice_interactive/realtime_voice_interactive.py ni
+# 命令行直接启动
+python 前端/hkust_ai_assistant_entry.py --mode voice      # 默认语音模式
+python 前端/hkust_ai_assistant_entry.py --mode ni-voice   # 倪校语音模式
 
-# 前端集成版（推荐）
-python 前端/hkust_ai_assistant_entry.py --mode voice
+# 或使用简短参数
+python 前端/hkust_ai_assistant_entry.py --voice-interactive      # 默认语音
+python 前端/hkust_ai_assistant_entry.py --ni-voice-interactive   # 倪校语音
+
+# 底层工具直接调用
+python tools/core/realtime_voice_interactive/realtime_voice_interactive.py     # 默认音色
+python tools/core/realtime_voice_interactive/realtime_voice_interactive.py ni  # 倪校音色
 ```
+
+**🎯 三种交互模式对比**：
+
+| 模式 | 音色来源 | 适用场景 | 技术特点 |
+|------|----------|----------|----------|
+| 📚 学术问答 | 文本回复 | 学术咨询、研究支持 | 专业、严谨、详细 |
+| 🎤 默认语音 | 千问Omni内置 | 日常对话、快速交互 | 稳定、快速、开箱即用 |
+| 🎓 倪校语音 | 声音克隆技术 | 正式场合、学术交流 | 权威、专业、流式播放 |
 
 **功能特色**：
 - 🎤 **实时语音识别**：自然中文语音输入，自动转换为文本
 - 🔊 **双音色模式**：系统默认音色 + 倪校长克隆音色
 - ⚡ **极速打断机制**：0.01ms响应时间，多级打断处理
 - 🎵 **动态音量检测**：自适应背景噪音校准和连续性验证  
-- 🚀 **流式TTS播放**：逐句生成播放，大幅提升响应速度
+- 🚀 **流式TTS播放**：逐句生成播放，大幅提升响应速度（倪校模式）
 - 🧠 **分形智能**：支持嵌套Agent调用，自然语言优先
 - 🎯 **企业级体验**：专业级语音交互解决方案
-
-**音色模式对比**：
-- **默认模式**：使用千问Omni内置语音，快速可靠的对话体验
-- **倪校模式**：采用声音克隆技术，流式分句播放，智能语音分割
 
 **使用说明**：
 - 自然说话提问
 - 系统会在您开始说话时自动打断AI回答
 - 等待AI完整回答后继续对话
 - 按 Ctrl+C 退出系统
+- 支持文本指令："voice off" 切换到文本模式
 
 ### 复合工具
 

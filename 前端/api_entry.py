@@ -9,8 +9,9 @@ import os
 import sys
 from typing import Dict, Any, Optional
 
-# 确保项目路径在Python路径中
-project_root = os.path.dirname(os.path.abspath(__file__))
+# 确保项目根目录在Python路径中
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)  # 前端文件夹的上级目录就是项目根目录
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 

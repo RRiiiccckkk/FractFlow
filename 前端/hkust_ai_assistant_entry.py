@@ -110,11 +110,12 @@ class HKUSTAIAssistant:
 - 流式TTS播放，自然语音节奏
 - 企业级语音交互体验
 
-🎙️ **倪校长语音包功能**：
-当用户要求语音交互或声音克隆时，你需要调用相应工具：
-- clone_voice_with_ni(text="要说的内容") - 单次声音克隆
-- start_ni_realtime_voice_interactive() - 启动倪校音色语音对话
-- stop_ni_realtime_voice_interactive() - 停止语音对话
+🎙️ **语音指令优先级**：
+- "启动倪校语音助手" → 使用 start_ni_realtime_voice_interactive()
+- "停止倪校语音助手" → 使用 stop_ni_realtime_voice_interactive()
+- "启动语音助手" → 使用 start_ni_realtime_voice_interactive()（在倪校模式中优先倪校助手）
+- "停止语音助手" → 使用 stop_ni_realtime_voice_interactive()
+- 单次声音克隆：使用 clone_voice_with_ni(text="要说的内容")
 
 💡 **特色功能**：
 - 🎓 倪校长专属音色（声音克隆技术）
@@ -127,31 +128,7 @@ class HKUSTAIAssistant:
 - 提供权威性的语音回复
 - 营造专业的交互氛围
 
-请根据用户需求选择合适的工具来完成任务。
-
-🎤 **语音对话功能**：
-- 可以启动和停止实时语音对话助手
-- 支持语音识别和语音合成
-- 支持实时打断功能
-
-🔄 **复合指令处理**：
-- "请用倪校长的声音和我进行语音交互" → 先调用 start_simple_voice_assistant()，再用倪校声音欢迎
-- "启动倪校语音模式" → 启动语音助手并设置倪校声音为默认
-- "开始语音交互，用倪校长声音回复" → 组合使用两个功能
-
-📋 **使用规则**：
-1. 单一倪校声音请求：使用 clone_voice_with_ni(text="要说的内容")
-2. 单一语音对话请求：使用 start_simple_voice_assistant()
-3. 复合请求：先启动语音助手，再用倪校声音说欢迎词
-4. 停止请求：使用 stop_simple_voice_assistant()
-
-💡 **示例场景**：
-- "请用倪校长的声音说欢迎词" → 调用 clone_voice_with_ni
-- "启动语音助手" → 调用 start_simple_voice_assistant
-- "请用倪校长的声音和我进行语音交互" → 调用 start_simple_voice_assistant + clone_voice_with_ni("欢迎使用语音交互功能")
-- "开始倪校语音模式" → 启动语音助手并用倪校声音欢迎
-
-请根据用户的具体需求，智能选择合适的工具来完成任务。对于复合请求，请按逻辑顺序执行多个工具调用。"""
+请根据用户需求选择合适的工具来完成任务。在倪校语音交互模式中，默认使用倪校音色相关工具。"""
 
     async def initialize(self) -> Dict[str, Any]:
         """
@@ -221,16 +198,31 @@ class HKUSTAIAssistant:
             
             self.voice_active = True
             
-            return {
-                "success": True,
-                "message": "语音模式已激活",
-                "instructions": [
-                    "🎙️ 语音输入已启用",
-                    "🔊 语音输出已启用", 
-                    "🎯 支持倪校长语音包",
-                    "📋 输入 'voice off' 来关闭语音模式"
-                ]
-            }
+            # 根据当前模式返回不同的指令
+            if self.mode == AssistantMode.NI_VOICE_INTERACTION:
+                return {
+                    "success": True,
+                    "message": "倪校语音模式已激活",
+                    "voice_command": "启动倪校语音助手",  # 专门给倪校模式的启动指令
+                    "instructions": [
+                        "🎓 倪校长音色已启用",
+                        "🚀 流式TTS播放已激活", 
+                        "⚡ 极速打断机制已就绪",
+                        "📋 输入 'voice off' 来关闭语音模式"
+                    ]
+                }
+            else:
+                return {
+                    "success": True,
+                    "message": "默认语音模式已激活", 
+                    "voice_command": "启动语音助手",  # 默认模式的启动指令
+                    "instructions": [
+                        "🎤 千问Omni语音已启用",
+                        "🔊 语音输出已启用", 
+                        "⚡ 实时打断功能已就绪",
+                        "📋 输入 'voice off' 来关闭语音模式"
+                    ]
+                }
         except Exception as e:
             return {
                 "success": False,
@@ -248,9 +240,16 @@ class HKUSTAIAssistant:
         try:
             self.voice_active = False
             
+            # 根据当前模式返回不同的停止指令
+            if self.mode == AssistantMode.NI_VOICE_INTERACTION:
+                stop_command = "停止倪校语音助手"
+            else:
+                stop_command = "停止语音助手"
+            
             return {
                 "success": True,
                 "message": "已返回文本模式",
+                "voice_stop_command": stop_command,
                 "instructions": [
                     "💬 当前为文本交互模式",
                     "🎤 输入 'voice' 或 '语音模式' 来重新激活语音"
@@ -280,8 +279,9 @@ class HKUSTAIAssistant:
         if query.lower() in ['voice', '语音模式', 'voice on', '启动语音', '开始语音']:
             result = await self.activate_voice_mode()
             if result["success"]:
-                # 启动语音助手
-                voice_start = await self.agent.process_query("启动语音助手")
+                # 根据模式启动相应的语音助手
+                voice_command = result.get("voice_command", "启动语音助手")
+                voice_start = await self.agent.process_query(voice_command)
                 return f"{result['message']}\n\n{voice_start}\n\n" + "\n".join(result["instructions"])
             else:
                 return result["message"]
@@ -289,8 +289,9 @@ class HKUSTAIAssistant:
         elif query.lower() in ['voice off', '关闭语音', '文本模式', 'text mode']:
             result = await self.deactivate_voice_mode()
             if result["success"]:
-                # 停止语音助手
-                voice_stop = await self.agent.process_query("停止语音助手")
+                # 根据模式停止相应的语音助手
+                stop_command = result.get("voice_stop_command", "停止语音助手")
+                voice_stop = await self.agent.process_query(stop_command)
                 return f"{result['message']}\n\n{voice_stop}\n\n" + "\n".join(result["instructions"])
             else:
                 return result["message"]
@@ -497,6 +498,21 @@ async def main():
     print("   - 'voice off' 或 '文本模式': 关闭语音交互") 
     print("   - 'quit', 'exit', '退出': 结束对话")
     print("-" * 50)
+    
+    # 如果是倪校语音模式，自动激活语音功能
+    if mode == AssistantMode.NI_VOICE_INTERACTION:
+        print("\n🎓 正在自动启动倪校语音交互功能...")
+        voice_result = await assistant.activate_voice_mode()
+        if voice_result["success"]:
+            voice_command = voice_result.get("voice_command", "启动倪校语音助手")
+            voice_response = await assistant.agent.process_query(voice_command)
+            print(f"✅ {voice_result['message']}")
+            print(f"🤖 助手: {voice_response}")
+            for instruction in voice_result["instructions"]:
+                print(f"   {instruction}")
+        else:
+            print(f"❌ 自动启动失败: {voice_result['message']}")
+            print("💡 您可以手动输入 'voice' 来启动语音功能")
     
     try:
         while True:

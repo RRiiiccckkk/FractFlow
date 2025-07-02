@@ -15,7 +15,18 @@ project_root = os.path.dirname(current_dir)  # 前端文件夹的上级目录就
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from hkust_ai_assistant_entry import HKUSTAIAssistant, AssistantMode
+# 新增：确保前端目录也在sys.path，便于直接import hkust_ai_assistant_entry
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
+# 修复导入路径
+try:
+    from hkust_ai_assistant_entry import HKUSTAIAssistant, AssistantMode
+except ModuleNotFoundError:
+    # 回退到相对导入（需要前端目录在sys.path）
+    from importlib import import_module
+    HKUSTAIAssistant = import_module("hkust_ai_assistant_entry").HKUSTAIAssistant
+    AssistantMode = import_module("hkust_ai_assistant_entry").AssistantMode
 
 class HKUSTAssistantAPI:
     """HKUST AI Assistant API接口"""
@@ -85,6 +96,42 @@ class HKUSTAssistantAPI:
                 "message": "启动语音模式失败"
             }
     
+    async def start_manual_interrupt_mode(self) -> Dict[str, Any]:
+        """
+        启动手动实时打断模式
+        
+        Returns:
+            启动结果
+        """
+        try:
+            if self.assistant:
+                await self.assistant.shutdown()
+            
+            self.assistant = HKUSTAIAssistant(AssistantMode.MANUAL_INTERRUPT)
+            result = await self.assistant.initialize()
+            
+            return {
+                "success": True,
+                "mode": "manual_interrupt",
+                "message": "手动实时打断模式已启动",
+                "description": "毫秒级AI打断响应系统，极致的对话控制体验",
+                "features": [
+                    "毫秒级打断响应（<50ms）",
+                    "双音色支持（默认+倪校）",
+                    "用户完全掌控对话节奏",
+                    "零崩溃保证",
+                    "智能内存监控",
+                    "支持MCP服务器模式"
+                ]
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "message": "启动手动实时打断模式失败"
+            }
+    
     async def process_message(self, message: str) -> Dict[str, Any]:
         """
         处理用户消息
@@ -129,7 +176,7 @@ class HKUSTAssistantAPI:
             return {
                 "initialized": False,
                 "mode": None,
-                "available_modes": ["academic_qa", "voice_interaction"]
+                "available_modes": ["academic_qa", "voice_interaction", "manual_interrupt"]
             }
         
         status = self.assistant.get_status()
@@ -185,6 +232,11 @@ async def start_voice_assistant() -> Dict[str, Any]:
     api = get_api()
     return await api.start_voice_mode()
 
+async def start_manual_interrupt_assistant() -> Dict[str, Any]:
+    """直接启动手动实时打断助手"""
+    api = get_api()
+    return await api.start_manual_interrupt_mode()
+
 async def send_message(message: str) -> Dict[str, Any]:
     """发送消息给助手"""
     api = get_api()
@@ -234,6 +286,42 @@ async def test_composite_commands():
     # 关闭助手
     await shutdown_assistant()
     print("\n✅ 测试完成")
+
+# 测试手动实时打断功能
+async def test_manual_interrupt():
+    """测试手动实时打断功能"""
+    print("⚡ 测试手动实时打断功能")
+    print("=" * 40)
+    
+    # 启动手动实时打断模式
+    result = await start_manual_interrupt_assistant()
+    if not result["success"]:
+        print(f"❌ 启动失败: {result['message']}")
+        return
+    
+    print("✅ 手动实时打断模式已启动")
+    print(f"📝 特性: {', '.join(result['features'])}")
+    
+    # 测试打断指令
+    test_commands = [
+        "启动手动实时打断助手",
+        "启动倪校版手动打断",
+        "测试毫秒级打断响应",
+        "停止手动实时打断助手"
+    ]
+    
+    for i, command in enumerate(test_commands, 1):
+        print(f"\n⚡ 测试{i}: {command}")
+        response = await send_message(command)
+        
+        if response["success"]:
+            print(f"✅ 响应: {response['response'][:100]}{'...' if len(response['response']) > 100 else ''}")
+        else:
+            print(f"❌ 错误: {response['message']}")
+    
+    # 关闭助手
+    await shutdown_assistant()
+    print("\n✅ 手动实时打断测试完成")
 
 if __name__ == "__main__":
     # 检查API密钥

@@ -1,0 +1,13 @@
+{
+  "session_id": "20250702_121201_84e9fcc8",
+  "created_at": "2025-07-02T12:13:47.499717",
+  "last_update": "2025-07-02T12:13:47.499745",
+  "current_turn": 0,
+  "conversation_history": [],
+  "statistics": {
+    "total_turns": 0,
+    "total_user_chars": 0,
+    "total_ai_chars": 0,
+    "session_duration_minutes": 0.0
+  }
+}

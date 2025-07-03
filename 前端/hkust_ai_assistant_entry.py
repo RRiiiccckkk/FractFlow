@@ -586,17 +586,60 @@ async def main():
     print("   - 'quit', 'exit', '退出': 结束对话")
     print("-" * 50)
     
-    # 如果是倪校语音模式，自动激活语音功能
-    if mode == AssistantMode.NI_VOICE_INTERACTION:
-        print("\n🎓 正在自动启动倪校语音交互功能...")
+    # 自动激活语音功能（针对所有语音模式）
+    if mode in [AssistantMode.VOICE_INTERACTION, AssistantMode.NI_VOICE_INTERACTION, AssistantMode.MANUAL_INTERRUPT]:
+        if mode == AssistantMode.NI_VOICE_INTERACTION:
+            print("\n🎓 正在自动启动倪校语音交互功能...")
+        elif mode == AssistantMode.MANUAL_INTERRUPT:
+            print("\n⚡ 正在自动启动手动实时打断功能...")
+        elif mode == AssistantMode.VOICE_INTERACTION:
+            print("\n🎤 正在自动启动默认语音交互功能...")
+        
         voice_result = await assistant.activate_voice_mode()
         if voice_result["success"]:
-            voice_command = voice_result.get("voice_command", "启动倪校语音助手")
+            voice_command = voice_result.get("voice_command", "启动语音助手")
             voice_response = await assistant.agent.process_query(voice_command)
             print(f"✅ {voice_result['message']}")
             print(f"🤖 助手: {voice_response}")
+            print("")
             for instruction in voice_result["instructions"]:
                 print(f"   {instruction}")
+            print("")
+            
+            # 针对手动实时打断模式的特殊处理：直接进入工具的交互模式
+            if mode == AssistantMode.MANUAL_INTERRUPT:
+                print("🎮 **正在启动手动实时打断交互模式...**")
+                print("   📋 即将完全接管控制，按回车键开始录音！")
+                print("   📋 录音完成后再按回车键发送")
+                print("   📋 AI回答时按回车键立即打断")
+                print("   📋 完全由你掌控对话节奏")
+                print("   📋 输入 'q' 或 'quit' 退出手动打断模式")
+                print("")
+                
+                # 导入并直接运行手动实时打断工具的交互模式
+                try:
+                    sys.path.insert(0, os.path.join(project_root, "tools/core/手动实时打断"))
+                    from 手动实时打断_agent import SimpleManualVoiceController
+                    
+                    # 直接创建并运行手动实时打断控制器
+                    print("⚡ 正在启动手动实时打断语音控制...")
+                    controller = SimpleManualVoiceController()
+                    result = await controller.run_interactive_mode()
+                    
+                    if result["success"]:
+                        print(f"✅ 手动实时打断模式已结束: {result.get('message', '')}")
+                    else:
+                        print(f"❌ 手动实时打断模式错误: {result.get('error', '')}")
+                    
+                    # 手动实时打断模式结束后，直接返回，不进入文字循环
+                    await assistant.shutdown()
+                    print("✅ 系统已安全关闭")
+                    return
+                    
+                except Exception as e:
+                    print(f"❌ 启动手动实时打断交互模式失败: {e}")
+                    print("💡 将继续使用文字模式，您可以手动输入指令")
+            
         else:
             print(f"❌ 自动启动失败: {voice_result['message']}")
             print("💡 您可以手动输入 'voice' 来启动语音功能")
